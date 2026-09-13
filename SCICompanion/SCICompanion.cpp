@@ -23,6 +23,7 @@
 
 
 #include "stdafx.h"
+#include "PersistentFileDialog.h"
 
 #include "AppState.h"
 #include "MainFrm.h"
@@ -147,7 +148,7 @@ BEGIN_MESSAGE_MAP(SCICompanionApp, CWinApp)
     ON_COMMAND(ID_HELP_GETGAMES, GetGames)
     ON_COMMAND(ID_HELP_SCICOMPANION, OnSCICompHelp)
     // Standard file based document commands
-    ON_COMMAND(ID_FILE_OPEN, CWinApp::OnFileOpen)
+    ON_COMMAND(ID_FILE_OPEN, OnFileOpen)
     ON_COMMAND(ID_RUNGAME, OnRunGame)
     ON_COMMAND(ID_DEBUGGAME, OnDebugGame)
     ON_COMMAND(ID_ROOM_EXPLORER, OnRoomExplorer)
@@ -749,7 +750,40 @@ void SCICompanionApp::AddToRecentFileList(PCTSTR lpszPathName)
         {
             *pszFileName = 0;
             __super::AddToRecentFileList(szBuffer);
+            // Also remember this as the starting folder for the next
+            // File > Open Game -- see OnFileOpen() and
+            // PersistentFileDialog.h for why this isn't left to Wine's
+            // own (apparently non-functional here) file-dialog memory.
+            SetLastUsedFolder(szBuffer);
         }
+    }
+}
+
+void SCICompanionApp::OnFileOpen()
+{
+    // File > Open Game uses CDocTemplate's own file-open flow (filter
+    // string, MRU, etc. all come from the framework), which we don't
+    // want to reimplement by hand -- but that flow's own dialog falls
+    // back to the process's current directory for its starting folder
+    // when nothing else overrides it, so temporarily pointing the
+    // process there first is enough to steer it without touching
+    // CWinApp::OnFileOpen()/DoPromptFileName() at all. See
+    // PersistentFileDialog.h for why we can't just rely on Wine to
+    // remember this on its own.
+    CString lastFolder = GetLastUsedFolder();
+    TCHAR originalDir[MAX_PATH] = { 0 };
+    BOOL fHadOriginalDir = FALSE;
+    if (!lastFolder.IsEmpty())
+    {
+        fHadOriginalDir = GetCurrentDirectory(ARRAYSIZE(originalDir), originalDir) != 0;
+        SetCurrentDirectory(lastFolder);
+    }
+
+    __super::OnFileOpen();
+
+    if (fHadOriginalDir)
+    {
+        SetCurrentDirectory(originalDir);
     }
 }
 
