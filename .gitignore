@@ -193,3 +193,10 @@ ModelManifest.xml
 Bin_1000/
 /SCICompanion.VC.VC.opendb
 /SCICompanion.VC.db
+
+# Visual Studio's own per-user solution cache (the .suo-era rules above
+# predate this folder)
+.vs/
+
+# JetBrains IDEs (CLion, Rider, etc.)
+.idea/
