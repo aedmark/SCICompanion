@@ -761,29 +761,23 @@ void SCICompanionApp::AddToRecentFileList(PCTSTR lpszPathName)
 
 void SCICompanionApp::OnFileOpen()
 {
-    // File > Open Game uses CDocTemplate's own file-open flow (filter
-    // string, MRU, etc. all come from the framework), which we don't
-    // want to reimplement by hand -- but that flow's own dialog falls
-    // back to the process's current directory for its starting folder
-    // when nothing else overrides it, so temporarily pointing the
-    // process there first is enough to steer it without touching
-    // CWinApp::OnFileOpen()/DoPromptFileName() at all. See
-    // PersistentFileDialog.h for why we can't just rely on Wine to
-    // remember this on its own.
-    CString lastFolder = GetLastUsedFolder();
-    TCHAR originalDir[MAX_PATH] = { 0 };
-    BOOL fHadOriginalDir = FALSE;
-    if (!lastFolder.IsEmpty())
+    // The stock CWinApp::OnFileOpen()/CDocManager::DoPromptFileName()
+    // flow owns its CFileDialog internally, giving us no way to set
+    // lpstrInitialDir on it -- so it falls back entirely to comdlg32's
+    // own "remember last folder" memory, which is exactly the thing
+    // that doesn't persist under Wine (see PersistentFileDialog.h).
+    // There's also no filter registered for the game doc template
+    // (IDR_MAINFRAME has no STRINGTABLE entry), so that stock dialog
+    // was only ever showing the *other* resource types' filters plus
+    // "All Files" here anyway. Using our own CPersistentFileDialog,
+    // filtered specifically to resource.map, both fixes the folder
+    // memory and better matches what this command actually does.
+    CPersistentFileDialog fileDialog(TRUE, nullptr, nullptr,
+        OFN_HIDEREADONLY | OFN_FILEMUSTEXIST,
+        _T("Game Resource Map (resource.map)|resource.map|All Files (*.*)|*.*||"), nullptr);
+    if (fileDialog.DoModal() == IDOK)
     {
-        fHadOriginalDir = GetCurrentDirectory(ARRAYSIZE(originalDir), originalDir) != 0;
-        SetCurrentDirectory(lastFolder);
-    }
-
-    __super::OnFileOpen();
-
-    if (fHadOriginalDir)
-    {
-        SetCurrentDirectory(originalDir);
+        OpenDocumentFile(fileDialog.GetPathName());
     }
 }
 
