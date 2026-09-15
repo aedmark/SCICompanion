@@ -185,6 +185,22 @@ CExtPopupBaseWnd::e_animation_type_t
 	CExtPopupBaseWnd::g_DefAnimationType =
 		CExtPopupBaseWnd::__AT_NONE; // __AT_FADE; // __AT_RANDOM
 
+// Non-animated popups are normally created WS_EX_LAYERED and stepped through
+// SetLayeredWindowAttributes() alpha 0 -> 1 -> 255 so they appear already
+// painted. Wine's X11 driver maps that alpha onto _NET_WM_WINDOW_OPACITY, and
+// some XWayland compositors (e.g. COSMIC) then show the popup as a solid black
+// rectangle. Skip the forced layering under Wine; real Windows is untouched.
+static bool stat_IsRunningUnderWine()
+{
+	static int s_nCached = -1;
+	if( s_nCached < 0 )
+	{
+		HMODULE hNtDll = ::GetModuleHandleA( "ntdll.dll" );
+		s_nCached = ( hNtDll != NULL && ::GetProcAddress( hNtDll, "wine_get_version" ) != NULL ) ? 1 : 0;
+	}
+	return ( s_nCached != 0 );
+}
+
 const UINT CExtPopupBaseWnd::g_nMsgPrepareMenu =
 	::RegisterWindowMessage(
 		_T("CExtPopupMenuWnd::g_nMsgPrepareMenu")
@@ -7239,6 +7255,7 @@ HCURSOR hCursor = ::LoadCursor( NULL, IDC_ARROW );
 			)
 			bLayered = true;
 		if(		(! bLayered)
+			&&	( ! stat_IsRunningUnderWine() )
 			&&	g_PaintManager.m_bIsWin2000orLater
 			&&	g_PaintManager.m_pfnSetLayeredWindowAttributes != NULL
 			&&	( m_AnimationType == __AT_NONE || m_AnimationType == __AT_CONTENT_DISPLAY )
@@ -11479,6 +11496,7 @@ HWND hWndOwn = m_hWnd;
 bool bFadeOut = _IsFadeOutAnimation();
 bool bForceLayered = false;
 	if(		(! bFadeOut)
+		&&	( ! stat_IsRunningUnderWine() )
 		&&	g_PaintManager.m_bIsWin2000orLater
 		&&	g_PaintManager.m_pfnSetLayeredWindowAttributes != NULL
 		&&	( m_AnimationType == __AT_NONE || m_AnimationType == __AT_CONTENT_DISPLAY )
@@ -11601,6 +11619,7 @@ CExtSafeString strMenuClassName =
 
 bool bFadeOut = _IsFadeOutAnimation(), bForceLayered = false;
 	if(		(! bFadeOut)
+		&&	( ! stat_IsRunningUnderWine() )
 		&&	g_PaintManager.m_bIsWin2000orLater
 		&&	g_PaintManager.m_pfnSetLayeredWindowAttributes != NULL
 		&&	( m_AnimationType == __AT_NONE || m_AnimationType == __AT_CONTENT_DISPLAY )
@@ -20396,6 +20415,8 @@ bool CExtPopupMenuWnd::_IsFadeOutAnimation() const
 		return false;
 	if( g_PaintManager.m_pfnSetLayeredWindowAttributes == NULL )
 		return false;
+	if( stat_IsRunningUnderWine() )
+		return false; // fade-out also relies on WS_EX_LAYERED alpha, see stat_IsRunningUnderWine()
 	if(		m_nFadeOutAnimationStepCount <= 0
 		||	m_nFadeOutAnimationEllapse <= 0
 		)
