@@ -47,8 +47,8 @@ Create these only when the project needs them, and add them to the tables above:
 ## Style and evidence
 
 - Lead with the reader's task or the current truth.
-- Use exact commands and repository-relative paths; avoid screenshots for procedures when text will remain searchable.
-- Label examples as examples. Do not make sample credentials, hosts, or IDs look real.
+- Use exact commands and repository-relative paths; avoid screenshots when text will remain searchable.
+- Label examples as examples. Do not make sample credentials, hosts, personal paths, or game data look real.
 - Date volatile observations and identify the environment or commit when it affects reproducibility.
-- Link to the source of truth instead of restating it. If duplication is necessary, identify which copy is canonical.
-- Keep secrets, personal information, private URLs, and raw production data out of documentation and fixtures.
+- Link to the source of truth instead of restating it. If duplication is necessary, identify the canonical copy.
+- Keep secrets, personal information, private URLs, and private game assets out of documentation and fixtures.
