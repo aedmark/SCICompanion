@@ -8,10 +8,13 @@ How to run the available checks, what each proves, and what it cannot. Current r
 | Suite | File | Proves | Does not prove | Time, needs |
 | --- | --- | --- | --- | --- |
 | Documentation consistency | `tools/check_docs.py` | No placeholders; internal links and roadmap/decision/session references are consistent | C++ correctness or external links | Seconds, Python 3 |
+| 3x manual source | `tools/3x_manual.py`, `docs/SCICompanion.manual.json` | Every entry has valid What/How/Why content and evidence; related IDs resolve | Whether cited claims are true or the rendered page looks correct | Seconds, Python 3 |
 | Native unit tests | `UnitTests/*.cpp` | Covered compiler, class-browser, resource, picture, polygon, and fixture-game behaviour | Complete UI workflows, every SCI variant, installation, or Wine compatibility | Windows, compatible Visual Studio/MFC toolchain |
 | Manual desktop smoke test | Built `SCICompanion.exe` | The selected build starts and core user workflows operate in the tested environment | Untested Windows/Wine versions and resource formats | Windows or Wine, disposable game copy |
 
-**Fast set:** `python3 tools/check_docs.py`, then build the affected C++ project for code changes.
+**Fast set:** `python3 tools/check_docs.py`,
+`python3 tools/3x_manual.py check docs/SCICompanion.manual.json`, then build the affected C++ project for code
+changes.
 
 **Full set:** build Release/Win32 for `SCICompanion.sln`, run the native unit-test DLL, and complete the manual smoke
 checks below. P1-02 and P1-03 track the first fully recorded Windows baseline.
@@ -39,6 +42,20 @@ python3 tools/check_docs.py
 
 A pass exits 0 and ends with `0 error(s)`. Warnings are maintenance signals and should be addressed or explained.
 The checker reads source documentation only and does not write files.
+
+### 3x manual validation and generation
+
+From the repository root:
+
+```bash
+python3 tools/3x_manual.py check docs/SCICompanion.manual.json
+python3 tools/3x_manual.py build docs/SCICompanion.manual.json --output docs/manual.html
+```
+
+A valid source reports its section and entry counts with zero warnings. The build writes the standalone HTML manual.
+Run the build even when only wording changes, then inspect the generated diff and open the page in a browser when
+layout, navigation, inline formatting, or generator behavior could have changed. `docs/SCICompanion.manual.json` is
+the editable source; never patch `docs/manual.html` directly.
 
 ### Build and native unit tests
 
@@ -70,7 +87,7 @@ vstest.console.exe Release\UnitTests.dll
 
 | Changed area | Minimum checks | Additional evidence |
 | --- | --- | --- |
-| Documentation only | `python3 tools/check_docs.py` | Inspect Markdown diff and links |
+| Documentation only | Both Python documentation checks; rebuild `docs/manual.html` if its source or cited subjects changed | Inspect Markdown/JSON/generated diff and links; browser smoke-test presentation changes |
 | Compiler, parser, decompiler, class browser | Affected build plus `TestCompile`/`TestClassBrowser` | Compile representative SCI0 and SCI1.1 fixture projects |
 | Resource readers/writers | Affected build plus resource tests | Save/reload a disposable game; inspect unchanged unrelated resources |
 | Picture/raster conversion | Affected build plus picture tests | Open, render, save, reload representative EGA and VGA assets |

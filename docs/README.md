@@ -17,6 +17,9 @@ to it instead of copying it.
 | `SECURITY.md` | Users and developers | Sensitive assets, trust boundaries, reporting, secure defaults | Full operational incident history |
 | `CONTRIBUTING.md` | Contributors | Setup, change, review, and submission workflow | Agent-only instructions |
 | `CHANGELOG.md` | Users | Released and unreleased user-visible changes | Commit-by-commit history |
+| `SCICompanion.manual.json` | Users, newcomers, and developers | Structured What/How/Why reading path and evidence links | Canonical workflow, state, plans, or decisions |
+| `manual.html` | Manual readers | Generated standalone presentation of `SCICompanion.manual.json` | Hand-edited facts; regenerate instead |
+| `manual.schema.json` | Tools and manual authors | Machine-readable 3x source format | SCI Companion content |
 
 ## Update triggers
 
@@ -32,6 +35,7 @@ Update documents because a relevant fact changed, not merely because a session e
 | Work pauses with context another session needs | HANDOFF |
 | Contribution or release workflow change | CONTRIBUTING and, if agents are affected, AGENTS |
 | New planned work | ROADMAP, with origin and acceptance evidence |
+| Manual subject, relationship, or cross-cutting explanation changes | `SCICompanion.manual.json`, then regenerate `manual.html` |
 
 ## Optional documents
 
@@ -52,3 +56,19 @@ Create these only when the project needs them, and add them to the tables above:
 - Date volatile observations and identify the environment or commit when it affects reproducibility.
 - Link to the source of truth instead of restating it. If duplication is necessary, identify the canonical copy.
 - Keep secrets, personal information, private URLs, and private game assets out of documentation and fixtures.
+
+## Generated 3x manual
+
+The [standalone manual](manual.html) is a searchable What/How/Why view over the project. Its source is
+`SCICompanion.manual.json`; canonical facts still belong to the documents in the ownership table above. Every entry
+must cite implementation, tests, or canonical documentation, and inferred rationale must say that it is inferred.
+
+Validate and regenerate it from the repository root:
+
+```bash
+python3 tools/3x_manual.py check docs/SCICompanion.manual.json
+python3 tools/3x_manual.py build docs/SCICompanion.manual.json --output docs/manual.html
+```
+
+The generator and schema are adapted from the MIT-licensed 3x Documentation Scheme. The retained license is
+`tools/3x-LICENSE`.

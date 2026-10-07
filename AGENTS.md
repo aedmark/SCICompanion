@@ -72,6 +72,7 @@ permission.
 | --- | --- | --- |
 | `Prof-UIS.2.92/` | Change only when the task explicitly requires it; preserve upstream notices | Bundled third-party UI library with its own license |
 | `SCICompanionLib/Src/CrystalEdit/`, `GIFLIB/`, `r8brain/`, `cpptoml/` | Isolate changes and preserve provenance/license text | Vendored or imported components |
+| `tools/3x_manual.py`, `docs/manual.schema.json` | Change only with a documentation-generator task; preserve `tools/3x-LICENSE` | Vendored MIT-licensed 3x Documentation Scheme code |
 | `Release/` | Do not replace binaries without an explicit release request | Generated/distribution output |
 | `SCICompanion/Files/TemplateGame/` | Treat compatibility changes as user-visible and test them | Shipped starter-game content |
 
@@ -103,8 +104,12 @@ permission.
 | `docs/SECURITY.md` | Assets, trust boundaries, secret handling, and reporting |
 | `docs/CONTRIBUTING.md` | Human and agent contribution workflow |
 | `docs/CHANGELOG.md` | User-visible release notes |
+| `docs/SCICompanion.manual.json` | Source for the generated What/How/Why project manual |
+| `docs/manual.html` | Generated standalone 3x project manual |
+| `docs/manual.schema.json` | JSON Schema for 3x manual sources |
 | `docs/archive/` | Historical material no longer current |
 | `tools/check_docs.py` | Documentation consistency checks |
+| `tools/3x_manual.py` | Vendored 3x manual validator and generator |
 
 ## Engineering conventions
 
@@ -116,6 +121,8 @@ permission.
 - New external dependencies require maintainer approval. Prefer the standard library and already-bundled code.
 - Visual Studio output, IDE state, and generated help are not source; do not commit them unless the release workflow
   explicitly requires an artifact update.
+- `docs/manual.html` is committed generated documentation. Edit `docs/SCICompanion.manual.json`, validate it, and
+  rebuild the HTML in the same change; do not hand-edit the generated file.
 
 ## Environments
 
@@ -132,7 +139,10 @@ permission.
 - Build: `msbuild SCICompanion.sln /m /p:Configuration=Release /p:Platform=Win32` from a Visual Studio Developer
   Command Prompt.
 - Run: `Release\SCICompanion.exe` after a successful Release/Win32 build.
-- Fast checks: `python3 tools/check_docs.py`; for C++ changes, build the affected project in Visual Studio.
+- Fast checks: `python3 tools/check_docs.py` and
+  `python3 tools/3x_manual.py check docs/SCICompanion.manual.json`; for C++ changes, build the affected project in
+  Visual Studio.
 - Full checks: build `SCICompanion.sln`, then run `vstest.console.exe Release\UnitTests.dll` and perform the manual
-  checks in `docs/TESTING.md`.
+  checks in `docs/TESTING.md`. For documentation changes, rebuild `docs/manual.html` and confirm the generated diff
+  matches the source change.
 - Detailed test guidance: `docs/TESTING.md`.

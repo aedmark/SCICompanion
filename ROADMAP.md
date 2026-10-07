@@ -20,6 +20,9 @@ Goal: make a fresh maintenance session able to understand, build, and verify the
 - [ ] P1-03 Establish the unit-test baseline on the supported Windows environment. Acceptance: all 14 discovered
   `TEST_METHOD` cases are enumerated, their result is recorded in `docs/HANDOFF.md`, and fixture/output side effects
   are documented. Origin: no runnable Windows test environment was available during template adoption (2026-10-07).
+- [x] P1-04 Apply the 3x Documentation Scheme as a generated companion manual without displacing canonical project
+  documents (D-003). Evidence: the source validates with 4 sections, 17 entries, and 0 warnings; the standalone HTML
+  builds reproducibly and was visually smoke-tested (2026-10-07).
 
 ## Phase 2: Automated maintenance
 

@@ -33,6 +33,24 @@ instructions per tool would let them drift.
 **Consequences:** Contributors must update the owning document when its trigger applies. The documentation should
 be removed or simplified if it stops being maintained rather than allowed to become ceremonial.
 
+## D-003 Use 3x as a generated companion, not a second source of truth  (2026-10-07, status: accepted)
+
+**Context:** The user asked to apply the 3x Documentation Scheme after the canonical repository-memory documents
+were established. The scheme provides a useful What/How/Why reading path, but copying every fact into a second
+authoritative system would create drift.
+
+**Decision:** Keep canonical workflow, plans, current state, architecture, tests, security guidance, and decisions in
+their existing Markdown owners. Maintain `docs/SCICompanion.manual.json` as an evidence-linked orientation layer and
+commit the generated standalone `docs/manual.html`. Validate and rebuild it with the vendored MIT-licensed
+`tools/3x_manual.py`; never hand-edit the HTML.
+
+**Alternatives:** Replacing the Markdown set would discard its lifecycle, stable IDs, handoff, and checker. Leaving
+the 3x template as a nested repository would add tooling and examples without applying them to SCI Companion.
+
+**Consequences:** Some explanatory content is intentionally repeated for navigation, but each entry points to
+implementation, tests, or canonical documents. Unrecorded rationale must be labeled as inference. Changes affecting
+a manual subject update the JSON and generated HTML in the same change.
+
 ## Open questions
 
 Questions requiring maintainer input live here. Numbers are permanent; answered questions remain with their answer

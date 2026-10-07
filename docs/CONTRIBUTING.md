@@ -27,6 +27,7 @@ This is the shared workflow for human and automated contributors. Agent-specific
 
 ```text
 python3 tools/check_docs.py
+python3 tools/3x_manual.py check docs/SCICompanion.manual.json
 msbuild SCICompanion.sln /m /p:Configuration=Release /p:Platform=Win32
 vstest.console.exe Release\UnitTests.dll
 ```
@@ -34,6 +35,10 @@ vstest.console.exe Release\UnitTests.dll
 The MSBuild and VSTest commands require a compatible Windows/Visual Studio environment and are not yet verified on
 a clean machine. Follow [TESTING.md](TESTING.md) for prerequisites, exact scope, and manual checks. Report every
 command run, its outcome, and what was skipped; a partial pass is not a full pass.
+
+When an implementation or canonical document changes a subject covered by the 3x manual, update
+`SCICompanion.manual.json`, regenerate `manual.html`, and include both files. The generated HTML is reviewed output,
+not an editing surface.
 
 ## Submit and review
 

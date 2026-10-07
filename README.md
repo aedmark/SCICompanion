@@ -14,6 +14,7 @@ Official website: [scicompanion.com](http://scicompanion.com)
 - `Prof-UIS.2.92/` is the bundled user-interface framework.
 
 See [the architecture guide](docs/ARCHITECTURE.md) for the component map and boundaries.
+For a searchable, cross-cutting introduction, open the standalone [What/How/Why manual](docs/manual.html).
 
 ## Build
 
@@ -38,6 +39,7 @@ Documentation-only changes can be checked on any system with Python 3:
 
 ```bash
 python3 tools/check_docs.py
+python3 tools/3x_manual.py check docs/SCICompanion.manual.json
 ```
 
 Exact prerequisites, limitations, and manual release checks are in [TESTING.md](docs/TESTING.md).

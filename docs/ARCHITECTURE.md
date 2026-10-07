@@ -77,6 +77,7 @@ game folder / imported asset / user edit
 | Microsoft C++ Unit Test Framework | Visual Studio-provided | `UnitTests` | Existing native test integration |
 | GDI+ and Video for Windows | Windows SDK libraries | Graphics and media operations | Platform APIs already used by the library |
 | Crystal Edit, GIFLIB, cpptoml, r8brain, CppFormat | Bundled source | Text editing, GIF handling, TOML, resampling, formatting | Existing source dependencies kept local for the native build |
+| 3x Documentation Scheme | Commit `32f5183`, vendored under `tools/` and `docs/` | Validate and generate the standalone project manual | Standard-library-only generator; MIT license retained in `tools/3x-LICENSE` |
 
 New dependencies require maintainer approval under [AGENTS.md](../AGENTS.md).
 
