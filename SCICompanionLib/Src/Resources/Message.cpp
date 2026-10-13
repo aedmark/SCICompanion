@@ -57,7 +57,13 @@ void MessageReadFrom_3411(TextComponent &messageComponent, sci::istream &byteStr
         byteStream >> message.Talker;
         uint16_t textOffset;
         byteStream >> textOffset;
-        byteStream.skip(3); // Unknown?
+        // Three reference bytes (noun, verb, condition). Older games often hold leftover junk here; keep the bytes in
+        // Style (unused by this format) so MessageWriteTo_3411 writes them back unchanged.
+        uint8_t refNoun, refVerb, refCondition;
+        byteStream >> refNoun;
+        byteStream >> refVerb;
+        byteStream >> refCondition;
+        message.Style = refNoun | (refVerb << 8) | (refCondition << 16);
         sci::istream textStream = byteStream;
         textStream.seekg(textOffset);
         textStream >> message.Text;
@@ -137,6 +143,51 @@ void MessageWriteTo_4000(const TextComponent &messageComponent, sci::ostream &by
     // NOTE: This may need to be padded to WORD boundary
 }
 
+// Layout after the version word and the zero word written by MessageWriteTo:
+//   uint16 size    byte count from the message count to the end of the text data
+//   uint16 count
+//   count x { noun, verb, condition, sequence, talker, uint16 textOffset, refNoun, refVerb, refCondition }
+//   zero-terminated strings
+// Text offsets are relative to the start of the resource data (the version word).
+void MessageWriteTo_3411(const TextComponent &messageComponent, sci::ostream &byteStream)
+{
+    uint32_t sizePosition = byteStream.tellp();
+    byteStream.WriteWord(0); // We'll fill this in later
+    uint32_t countPosition = byteStream.tellp();
+    byteStream.WriteWord((uint16_t)messageComponent.Texts.size());
+
+    uint32_t textOffset = byteStream.tellp() + (5 + 2 + 3) * (uint32_t)messageComponent.Texts.size();
+    for (const TextEntry &entry : messageComponent.Texts)
+    {
+        if (textOffset > 0xffff)
+        {
+            throw std::exception("Message resource too large");
+        }
+        byteStream << entry.Noun;
+        byteStream << entry.Verb;
+        byteStream << entry.Condition;
+        byteStream << entry.Sequence;
+        byteStream << entry.Talker;
+        byteStream.WriteWord((uint16_t)textOffset);
+        byteStream.WriteByte((uint8_t)(entry.Style & 0xff));
+        byteStream.WriteByte((uint8_t)((entry.Style >> 8) & 0xff));
+        byteStream.WriteByte((uint8_t)((entry.Style >> 16) & 0xff));
+        textOffset += (uint32_t)entry.Text.length() + 1;
+    }
+
+    for (const TextEntry &entry : messageComponent.Texts)
+    {
+        byteStream << entry.Text;
+    }
+
+    uint32_t sizeToEnd = byteStream.tellp() - countPosition;
+    if (sizeToEnd > 0xffff)
+    {
+        throw std::exception("Message resource too large");
+    }
+    *(reinterpret_cast<uint16_t*>(byteStream.GetInternalPointer() + sizePosition)) = (uint16_t)sizeToEnd;
+}
+
 uint16_t CheckMessageVersion(sci::istream &byteStream)
 {
     uint16_t msgVersion;
@@ -179,8 +230,7 @@ void MessageWriteTo(const ResourceEntity &resource, sci::ostream &byteStream, st
     }
     else if (message.msgVersion <= 0xd53)
     {
-        assert(false && "not implemented");
-        //MessageWriteTo_3411(message, byteStream);
+        MessageWriteTo_3411(message, byteStream);
     }
     else
     {
