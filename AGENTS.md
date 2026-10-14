@@ -128,14 +128,13 @@ permission.
 
 | Environment | Can access | Cannot access / caveats |
 | --- | --- | --- |
-| Windows development | Visual Studio, MFC, Windows SDK, Test Explorer, native app | Exact supported VS/toolset is unresolved in Q-001 |
+| Windows development | Visual Studio, MFC, Windows SDK, Test Explorer, native app | Visual Studio 2026 (`v145`), Win32 only (D-004) |
 | Linux/Codex workspace | Source inspection, Python documentation checker, Git tooling | Cannot build or run the MFC solution without a configured Windows toolchain |
 | CI | No repository CI configuration observed as of 2026-10-07 | No automated build or test evidence yet (P2-02) |
 
 ## Run and verify
 
-- Setup: install a compatible Visual Studio C++ desktop/MFC workload and Windows SDK; resolve Q-001 before treating
-  a particular toolset as canonical.
+- Setup: install Visual Studio 2026 with the C++ desktop and MFC workloads and a Windows 10 SDK (D-004).
 - Build: `msbuild SCICompanion.sln /m /p:Configuration=Release /p:Platform=Win32` from a Visual Studio Developer
   Command Prompt.
 - Run: `Release\SCICompanion.exe` after a successful Release/Win32 build.

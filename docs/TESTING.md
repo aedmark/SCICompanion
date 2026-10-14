@@ -71,8 +71,8 @@ vstest.console.exe Release\UnitTests.dll
 - The test post-build event copies `UnitTests/Files/` into `TestFiles/` beside the test DLL.
 - A pass requires MSBuild success and a VSTest summary with no failed tests; individual pass lines without a final
   successful summary are incomplete evidence.
-- The exact supported toolchain and output path still require Windows verification under P1-02. If Visual Studio
-  emits elsewhere, run the built `UnitTests.dll` and update this guide with the verified path.
+- Verified 2026-10-13 with Visual Studio 18 / MSVC 14.51 (D-004): Win32 builds write to `Debug\` and `Release\`
+  at the solution root; run `vstest.console.exe Release\UnitTests.dll /Platform:x86` (or `Debug\`).
 
 ### Adding a native check
 

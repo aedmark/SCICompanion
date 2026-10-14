@@ -12,13 +12,12 @@ Security: [SECURITY.md](SECURITY.md). Changes: [CHANGELOG.md](CHANGELOG.md). Old
 
 ## Current state
 
-_Last updated: 2026-10-07, session 2, on `master` at `538fe71a`: the 3x companion manual and its vendored generator
-are uncommitted in this working tree._
+_Last updated: 2026-10-13, session 3, on branch `codex/vs2026-build` from `master` at `04b1aeb0`._
 
 **Where things stand, in one paragraph:** The canonical repository-memory documents are committed, and a generated
 3x What/How/Why manual now provides a searchable orientation across product behavior, architecture, workflows, and
-maintenance. Both documentation systems validate locally without changing product code. The main gap remains the
-absence of a verified clean Windows build and native unit-test baseline, tracked by P1-02 and P1-03.
+maintenance. Both documentation systems validate locally without changing product code. The solution now builds
+with Visual Studio 2026 (D-004) and all native unit tests pass; P1-03 still needs fixture side effects documented.
 
 **Verified** (2026-10-07, on `538fe71a` plus the uncommitted 3x documentation application, Linux Codex workspace)
 
@@ -47,7 +46,12 @@ absence of a verified clean Windows build and native unit-test baseline, tracked
 
 **Gotchas for the next session**
 
-- Most projects request `v140_xp`, while one library configuration requests `v145`; do not silently retarget.
+- Every project configuration uses `v145`, Windows SDK 10.0, and C++17 (D-004). Never reintroduce `v140_xp`.
+- `std::filesystem::directory_iterator` throws for a missing folder under `v145`. Folder scans pass a
+  `std::error_code`; use the same form in any new scan.
+- `code_pos` (a `std::list` iterator) has no ordering. Key maps with `CodePosLess`, which handles `end()`;
+  `TestCodePosLessHandlesEnd` guards it.
+- Debug builds show modal `assert()` dialogs, which block `vstest.console.exe` until dismissed.
 - Solution configuration names include x64 variants that can map to Win32 or analysis project configurations.
 - Unit tests can copy fixtures and product operations can modify game files and registry settings. Use disposable
   data and resolve output paths before cleanup.
@@ -55,19 +59,45 @@ absence of a verified clean Windows build and native unit-test baseline, tracked
 
 ## Next steps (in order)
 
-1. Review and commit P1-04 and the generated manual.
-2. Resolve Q-001 and complete P1-02 on a clean Windows development environment.
-3. Run and record all native tests for P1-03, then use that evidence to design P2-02 CI.
+1. Follow up the upstream pull request for D-004 at `icefallgames/SCICompanion`.
+2. Document unit-test fixture side effects to finish P1-03, then design P2-02 CI from that baseline.
 4. Resolve Q-002 and document the release/security workflow in P2-01.
 
 ## Open questions for maintainers
 
-- Q-001: Which Windows/Visual Studio toolchain and retargeting path are supported? This blocks P1-02.
 - Q-002: Who owns releases and private security reports, and what versions are supported? This blocks P2-01.
 
 ## Session log
 
 Newest first. Past 10 entries, move the oldest complete entries to `docs/archive/` and leave a pointer here.
+
+### Session 3: 2026-10-13: Build with Visual Studio 2026
+
+**Contributor:** Claude Code
+
+**Goal:** Fix the build after retargeting to Visual Studio 2026, and get the unit tests passing.
+
+**Done:** P1-02.
+
+**Changed:** All projects use `v145` and C++17; CppFormat no longer uses `stdext::checked_array_iterator`; folder
+scans tolerate missing folders; `code_pos` maps use `CodePosLess`; a stale Studio-syntax-only assert in
+`DecompilerConfig.cpp` was relaxed; added decompile and `CodePosLess` tests.
+
+**Decisions:** D-004 recorded; Q-001 answered.
+
+**Verified:** Debug and Release Win32 rebuilds and `vstest.console.exe` on both with Visual Studio 18 / MSVC 14.51.
+A mutation check confirmed `TestCodePosLessHandlesEnd` fails when the comparator dereferences `end()`.
+
+**Not verified:** The application UI, Wine, and the plugin, pic-clip, and RST folder scans were not run by hand.
+
+**Problems / surprises:** The system clock jumped back mid-session (unsynced dual-boot clock), leaving build outputs
+dated in the future and silently skipping an incremental build; a full rebuild fixed it.
+
+**Corrections:** None.
+
+**Left undone:** P1-03 fixture side-effect notes, P2-01, P2-02.
+
+**Next session should start with:** Check the upstream pull request.
 
 ### Session 2: 2026-10-07: Apply the 3x Documentation Scheme
 

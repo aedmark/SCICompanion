@@ -13,10 +13,11 @@ Goal: make a fresh maintenance session able to understand, build, and verify the
 
 - [x] P1-01 Adopt the Manifold repository-memory documentation set and tailor it to the observed codebase (D-002).
   Evidence: `python3 tools/check_docs.py` passes (2026-10-07).
-- [ ] P1-02 Establish and verify the supported Visual Studio, Windows SDK, MFC workload, and project-retargeting
+- [x] P1-02 Establish and verify the supported Visual Studio, Windows SDK, MFC workload, and project-retargeting
   recipe. Acceptance: a clean Windows checkout builds Release/Win32 using the documented command; record tool
   versions and any required retargeting. Origin: template adoption found mixed `v140_xp`/`v145` metadata
-  (2026-10-07); blocked by Q-001.
+  (2026-10-07). Evidence: full Debug and Release Win32 rebuilds with Visual Studio 18 / MSVC 14.51 (D-004,
+  2026-10-13).
 - [ ] P1-03 Establish the unit-test baseline on the supported Windows environment. Acceptance: all 14 discovered
   `TEST_METHOD` cases are enumerated, their result is recorded in `docs/HANDOFF.md`, and fixture/output side effects
   are documented. Origin: no runnable Windows test environment was available during template adoption (2026-10-07).

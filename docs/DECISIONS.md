@@ -51,14 +51,36 @@ the 3x template as a nested repository would add tooling and examples without ap
 implementation, tests, or canonical documents. Unrecorded rationale must be labeled as inference. Changes affecting
 a manual subject update the JSON and generated HTML in the same change.
 
+## D-004 Build with Visual Studio 2026 (`v145`), Win32, C++17  (2026-10-13, status: accepted)
+
+**Context:** The projects requested the Visual Studio 2015 `v140_xp` toolset, which current Visual Studio cannot
+install, and one library configuration already requested `v145`. An earlier fork commit (`8e51fa4a`) ported the code
+to C++17. Building with `v145` (MSVC 14.51, Visual Studio 18) then exposed three more breaks: the bundled CppFormat
+used `stdext::checked_array_iterator`, which the MSVC STL removed; `std::filesystem::directory_iterator` throws for a
+missing folder where the old implementation returned nothing; and a `code_pos` comparator dereferenced a list's
+`end()`, which the debug STL rejects.
+
+**Decision:** Every project configuration uses `PlatformToolset` `v145`, `WindowsTargetPlatformVersion` 10.0, and
+`LanguageStandard` `stdcpp17`, for Win32. CppFormat uses plain pointers on compilers newer than VS 2015; folder scans
+pass a `std::error_code`; `code_pos` maps use `CodePosLess` (`SCICompanionLib/Src/Compile/scii.h`), which never
+dereferences `end()`. This answers Q-001.
+
+**Alternatives:** Keeping `v140_xp` requires a Visual Studio 2015 install that is no longer obtainable. Overriding the
+toolset on the command line leaves the IDE build broken. Upgrading CppFormat to a current fmt would change bundled
+third-party code more than needed.
+
+**Consequences:** Windows XP is no longer a build target. Debug and Release Win32 build and all unit tests pass on
+Visual Studio 18 / MSVC 14.51 (verified 2026-10-13). Contributors need the Visual Studio 2026 C++ desktop and MFC
+workloads. x64 remains unsupported.
+
 ## Open questions
 
 Questions requiring maintainer input live here. Numbers are permanent; answered questions remain with their answer
 and date.
 
 - **Q-001** Which Visual Studio release, Windows SDK, MFC workload, architecture/configuration, and retargeting steps
-  are officially supported? (asked 2026-10-07 during template adoption; blocks P1-02; recommendation: verify the
-  newest toolchain that builds Release/Win32 without source changes, then document any legacy-toolset exception)
+  are officially supported? (asked 2026-10-07 during template adoption; answered 2026-10-13 by D-004: Visual Studio
+  2026 `v145`, Windows SDK 10.0, MFC, Win32, C++17)
 - **Q-002** Who owns releases and private vulnerability reports, which branch/version receives fixes, and what is
   the version source of truth? (asked 2026-10-07 during template adoption; blocks P2-01; recommendation: use GitHub
   private vulnerability reporting and SemVer-style tags if they match existing maintainer practice)
