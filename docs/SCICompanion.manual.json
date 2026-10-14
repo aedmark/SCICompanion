@@ -1,0 +1,389 @@
+{
+  "$schema": "./manual.schema.json",
+  "project": {
+    "name": "SCI Companion",
+    "short_name": "SCI Companion",
+    "version": "3.2.0+unreleased",
+    "repository": "https://github.com/aedmark/SCICompanion"
+  },
+  "manual": {
+    "title": "SCI Companion Manual",
+    "subtitle": "Product behavior, implementation, and design rationale",
+    "description": "A searchable orientation to SCI Companion for users, contributors, and coding agents. Canonical maintenance facts remain in the linked repository documents.",
+    "badges": [
+      "Windows desktop",
+      "C++ and MFC",
+      "SCI0–SCI1.1",
+      "What · How · Why"
+    ],
+    "footer": "SCI Companion {{project.version}} · Generated from docs/SCICompanion.manual.json with the vendored 3x Documentation Scheme generator."
+  },
+  "theme": {
+    "accent": "#48B6D8",
+    "accent_secondary": "#A77BE8",
+    "icon": "◆"
+  },
+  "sections": [
+    {
+      "id": "product-foundations",
+      "title": "Product foundations",
+      "description": "What SCI Companion is, what it operates on, and the compatibility boundary readers should assume.",
+      "entries": [
+        {
+          "id": "product-overview",
+          "title": "SCI Companion overview",
+          "summary": "A Windows IDE for creating and maintaining Sierra Creative Interpreter games.",
+          "tags": ["overview", "user-facing"],
+          "what": [
+            "Provides one desktop workspace for scripts, pictures, views, fonts, audio, messages, vocabularies, and other SCI resources.",
+            "Targets game projects from SCI0 through SCI1.1 as the documented support range."
+          ],
+          "how": [
+            "Runs as a native MFC multiple-document application built from `SCICompanion.sln`.",
+            "Routes most product behavior through `SCICompanionLib`, with resource-specific documents, views, dialogs, compiler code, and storage code."
+          ],
+          "why": "Recorded in D-001: the established Windows/MFC architecture and thin-executable/shared-library split are the system to maintain unless the maintainer explicitly directs a broader rewrite.",
+          "evidence": [
+            {"label": "Public overview", "target": "README.md"},
+            {"label": "Architecture map", "target": "docs/ARCHITECTURE.md"},
+            {"label": "Architecture decision", "target": "docs/DECISIONS.md#d-001-preserve-the-native-windowsmfc-architecture"}
+          ],
+          "related": ["compatibility-scope", "application-shell", "shared-library"]
+        },
+        {
+          "id": "game-projects",
+          "title": "Game projects and resources",
+          "summary": "A game project is user-owned source and resource data, not merely an IDE workspace file.",
+          "tags": ["data", "compatibility", "safety"],
+          "what": [
+            "Opens an SCI game directory and exposes its scripts and encoded resources through specialized editors.",
+            "Can write compiled scripts, patch files, resource maps or volumes, exports, and other project artifacts."
+          ],
+          "how": [
+            "Version and storage detection select resource sources and format-specific readers or writers.",
+            "`ResourceMap`, resource entities, and MFC documents carry loaded data into editors and back to storage."
+          ],
+          "why": "Inferred from the resource architecture and test fixtures: SCI generations and storage layouts differ enough that version-aware handling must be central, and user projects must be treated as valuable mutable data.",
+          "evidence": [
+            {"label": "Resource implementation", "target": "SCICompanionLib/Src/Resources/"},
+            {"label": "Resource tests", "target": "UnitTests/TestResourceLoad.cpp"},
+            {"label": "Data safety guidance", "target": "docs/TESTING.md#before-any-run"}
+          ],
+          "related": ["compatibility-scope", "resource-system", "edit-save-reload", "security-boundaries"]
+        },
+        {
+          "id": "compatibility-scope",
+          "title": "Compatibility scope",
+          "summary": "The documented product range is SCI0 through SCI1.1; narrower claims need direct evidence.",
+          "tags": ["SCI0", "SCI1.1", "Wine"],
+          "what": [
+            "Supports the formats and workflows needed for documented SCI0 through SCI1.1 game projects.",
+            "Includes recent compatibility fixes for running file dialogs under Wine, without claiming a complete Wine support matrix."
+          ],
+          "how": [
+            "SCI version traits and format-specific implementations branch parsing, rendering, compilation, and writing behavior.",
+            "Unit fixtures cover representative variants; manual checks cover workflows that native tests do not exercise."
+          ],
+          "why": "The SCI family is not one uniform format. The support statement follows the root README; architecture notes explicitly avoid turning the presence of SCI2 picture fixtures into a claim of full SCI2 support.",
+          "evidence": [
+            {"label": "Support statement", "target": "README.md"},
+            {"label": "Claims versus code", "target": "docs/ARCHITECTURE.md#claims-vs-code"},
+            {"label": "Release checks", "target": "docs/TESTING.md#manual-checks-before-a-release"}
+          ],
+          "related": ["product-overview", "game-projects", "verification-strategy"]
+        }
+      ]
+    },
+    {
+      "id": "system-architecture",
+      "title": "System architecture",
+      "description": "The major runtime boundaries and the direction information moves through the native application.",
+      "entries": [
+        {
+          "id": "application-shell",
+          "title": "Application shell",
+          "summary": "The `SCICompanion` project starts MFC, restores preferences, and wires document templates to frames and views.",
+          "tags": ["MFC", "startup", "UI"],
+          "what": [
+            "Creates the desktop process, main frame, editor document templates, recent-file behavior, and application preferences.",
+            "Provides the Windows resources and shipped files that surround the reusable library."
+          ],
+          "how": [
+            "`SCICompanionApp::InitInstance()` initializes app state and OLE, selects the `mtnPhilms` registry profile, loads settings, and registers MFC document templates.",
+            "Each document template connects a resource document class to its frame and view classes."
+          ],
+          "why": "Recorded in D-001: the executable stays thin so reusable editor, resource, and compiler behavior remains concentrated in `SCICompanionLib`.",
+          "evidence": [
+            {"label": "Startup", "target": "SCICompanion/SCICompanion.cpp"},
+            {"label": "Executable project", "target": "SCICompanion/SCICompanion.vcxproj"},
+            {"label": "Architecture decision", "target": "docs/DECISIONS.md#d-001-preserve-the-native-windowsmfc-architecture"}
+          ],
+          "related": ["shared-library", "document-view-editors", "preferences-and-local-state"]
+        },
+        {
+          "id": "shared-library",
+          "title": "Shared application library",
+          "summary": "`SCICompanionLib` owns most domain behavior and editor implementation.",
+          "tags": ["C++", "static library", "core"],
+          "what": "Supplies resource storage, compiler/decompiler logic, documents, views, frames, dialogs, utilities, media handling, and shared application state to the executable and tests.",
+          "how": [
+            "Builds as a static MFC library referenced by both the executable and native test projects.",
+            "Organizes major areas beneath `SCICompanionLib/Src/`, with `AppState` coordinating cross-cutting application services."
+          ],
+          "why": "Recorded in D-001 and reinforced by the existing project graph: keeping behavior in a shared library lets the shell and tests use the same implementations while preserving the established MFC design.",
+          "evidence": [
+            {"label": "Library project", "target": "SCICompanionLib/SCICompanionLib.vcxproj"},
+            {"label": "Source map", "target": "docs/ARCHITECTURE.md#code-map"},
+            {"label": "Shared state", "target": "SCICompanionLib/Src/Util/AppState.cpp"}
+          ],
+          "related": ["application-shell", "resource-system", "compiler-and-language-tools", "document-view-editors"]
+        },
+        {
+          "id": "resource-system",
+          "title": "Resource system",
+          "summary": "Version-aware loaders and writers translate SCI storage into editable resource entities.",
+          "tags": ["resources", "storage", "formats"],
+          "what": [
+            "Enumerates, loads, creates, deletes, and saves typed SCI resources.",
+            "Hides resource-map, volume, patch-file, and version-specific details from higher editor layers where possible."
+          ],
+          "how": [
+            "Resource sources feed blobs and metadata into `ResourceMap` and resource-specific entity decoders.",
+            "Documents and tools modify entities, then encoders and selected resource sources persist the result."
+          ],
+          "why": "Inferred from the component boundaries and tests: centralizing storage/version decisions reduces the chance that each editor implements incompatible file handling and helps protect unrelated game resources during a save.",
+          "evidence": [
+            {"label": "Resource source tree", "target": "SCICompanionLib/Src/Resources/"},
+            {"label": "Resource map", "target": "SCICompanionLib/Src/Resources/ResourceMap.cpp"},
+            {"label": "Resource tests", "target": "UnitTests/TestResource.cpp"}
+          ],
+          "related": ["game-projects", "document-view-editors", "edit-save-reload", "security-boundaries"]
+        },
+        {
+          "id": "document-view-editors",
+          "title": "Document/view editors",
+          "summary": "MFC document, frame, and view classes implement resource-specific editing experiences.",
+          "tags": ["MFC", "editors", "lifecycle"],
+          "what": "Presents pictures, raster assets, scripts, audio, messages, text, vocabularies, and related resources in specialized editors with save and update behavior.",
+          "how": [
+            "`MFCDocuments/` owns editable models and save/undo integration.",
+            "`MFCViews/` renders and edits those models, while `MFCFrames/`, `Dialogs/`, and `FrameComponents/` supply windows, commands, and tool panes."
+          ],
+          "why": "Inferred from MFC's document/view model and the registered templates: separating model lifetime from presentation allows several resource editors to share application conventions while retaining format-specific UI.",
+          "evidence": [
+            {"label": "Document models", "target": "SCICompanionLib/Src/MFCDocuments/"},
+            {"label": "Editor views", "target": "SCICompanionLib/Src/MFCViews/"},
+            {"label": "Template registration", "target": "SCICompanion/SCICompanion.cpp"}
+          ],
+          "related": ["application-shell", "resource-system", "edit-save-reload"]
+        },
+        {
+          "id": "compiler-and-language-tools",
+          "title": "Compiler and language tools",
+          "summary": "The IDE parses, compiles, inspects, formats, and decompiles SCI scripts.",
+          "tags": ["scripts", "compiler", "decompiler"],
+          "what": [
+            "Turns supported script source into game resources and reports diagnostics to the editing workflow.",
+            "Supports class browsing, syntax analysis, formatting, decompilation, and version-specific code generation."
+          ],
+          "how": [
+            "Parser and syntax-context code create language structures consumed by compile contexts and bytecode/resource generation.",
+            "Decompiler paths reconstruct source-like output from compiled scripts; the class browser indexes project definitions."
+          ],
+          "why": "Inferred from the product's role as an IDE: keeping language operations in one subsystem makes editor diagnostics, project compilation, browsing, and tests share the same understanding of supported syntax.",
+          "evidence": [
+            {"label": "Compiler sources", "target": "SCICompanionLib/Src/Compile/"},
+            {"label": "Compile tests", "target": "UnitTests/TestCompile.cpp"},
+            {"label": "Class browser tests", "target": "UnitTests/TestClassBrowser.cpp"}
+          ],
+          "related": ["shared-library", "compile-and-run", "verification-strategy"]
+        }
+      ]
+    },
+    {
+      "id": "core-workflows",
+      "title": "Core workflows",
+      "description": "The main paths a user or maintainer follows through the application.",
+      "entries": [
+        {
+          "id": "open-and-identify-game",
+          "title": "Open and identify a game",
+          "summary": "Selecting a game directory establishes the active SCI version, resource storage, and project context.",
+          "tags": ["open game", "detection", "paths"],
+          "what": "Loads a selected existing game so its resources and scripts become available in the explorer and editors.",
+          "how": [
+            "The shell obtains a directory through a persistent file/folder dialog and passes it into application and resource-map state.",
+            "Detection logic inspects the game data, chooses SCI traits and resource sources, and populates the explorer."
+          ],
+          "why": "Inferred from the supported format range: detection must precede editing because the same resource type can use different encodings and capabilities across SCI generations.",
+          "evidence": [
+            {"label": "Open-game command", "target": "SCICompanion/SCICompanion.cpp"},
+            {"label": "Persistent dialog", "target": "SCICompanionLib/Src/Util/PersistentFileDialog.cpp"},
+            {"label": "Resource map", "target": "SCICompanionLib/Src/Resources/ResourceMap.cpp"}
+          ],
+          "related": ["game-projects", "resource-system", "preferences-and-local-state"]
+        },
+        {
+          "id": "edit-save-reload",
+          "title": "Edit, save, and reload a resource",
+          "summary": "Resource changes move through an editor document into version-aware persistent storage.",
+          "tags": ["editing", "persistence", "recovery"],
+          "what": "Lets a user change a resource, save it into a disposable or backed-up game project, close it, and reopen it with the change preserved.",
+          "how": [
+            "A resource document owns the editable entity and notifies its view as commands mutate state.",
+            "Saving encodes the entity for the active SCI version and commits it through the selected resource source; reloading exercises the reader path again."
+          ],
+          "why": "Inferred from user-data risk and the test strategy: save/reload is the meaningful persistence contract, while checking only an in-memory editor state would miss writer and compatibility failures.",
+          "evidence": [
+            {"label": "Resource documents", "target": "SCICompanionLib/Src/MFCDocuments/ResourceDocument.cpp"},
+            {"label": "Picture save/reload test", "target": "UnitTests/TestPicDraw.cpp"},
+            {"label": "Manual release checks", "target": "docs/TESTING.md#manual-checks-before-a-release"}
+          ],
+          "related": ["game-projects", "resource-system", "document-view-editors", "security-boundaries"]
+        },
+        {
+          "id": "compile-and-run",
+          "title": "Compile and run a game",
+          "summary": "Script compilation updates game resources; run profiles launch the selected interpreter or emulator.",
+          "tags": ["compile", "launch", "profiles"],
+          "what": [
+            "Compiles changed scripts and reports errors for navigation and correction.",
+            "Launches a configured game executable or interpreter with its stored parameters."
+          ],
+          "how": [
+            "Compiler code parses source and headers, resolves symbols and classes, then generates script resources for the active game.",
+            "`RunLogic` stores executable profiles and launches the chosen program using the configured path and arguments."
+          ],
+          "why": "Inferred from the IDE workflow: compilation and launch are connected so authors can move quickly from source changes to a game run, while explicit profiles accommodate different interpreters and local installations.",
+          "evidence": [
+            {"label": "Compiler sources", "target": "SCICompanionLib/Src/Compile/"},
+            {"label": "Run profiles", "target": "SCICompanionLib/Src/Util/RunLogic.cpp"},
+            {"label": "Compile tests", "target": "UnitTests/TestCompile.cpp"}
+          ],
+          "related": ["compiler-and-language-tools", "preferences-and-local-state", "security-boundaries"]
+        },
+        {
+          "id": "import-export-convert",
+          "title": "Import, export, and convert assets",
+          "summary": "Dialogs bridge common media formats and SCI-specific resource encodings.",
+          "tags": ["media", "conversion", "dialogs"],
+          "what": "Imports or converts images, audio, palettes, and other assets into supported SCI resources and exports resources for external use.",
+          "how": [
+            "Format-specific dialog and resource code decodes the selected input, applies user-selected conversion settings, and creates or updates a resource entity.",
+            "Save dialogs choose a resource number, package, and storage path before persistence."
+          ],
+          "why": "Inferred from the dialog and media architecture: conversion needs explicit previews and options because modern source media rarely matches SCI palette, resolution, audio, or encoding limits directly.",
+          "evidence": [
+            {"label": "Bitmap conversion", "target": "SCICompanionLib/Src/Dialogs/PrepareBitmapBase.cpp"},
+            {"label": "Audio editor", "target": "SCICompanionLib/Src/Dialogs/AudioEditDialog.cpp"},
+            {"label": "Save resource dialog", "target": "SCICompanionLib/Src/Dialogs/SaveResourceDialog.cpp"}
+          ],
+          "related": ["resource-system", "edit-save-reload", "security-boundaries"]
+        }
+      ]
+    },
+    {
+      "id": "maintenance-and-assurance",
+      "title": "Maintenance and assurance",
+      "description": "How contributors build confidence, preserve project memory, and handle risky boundaries.",
+      "entries": [
+        {
+          "id": "build-environment",
+          "title": "Build environment",
+          "summary": "The native solution requires Windows, Visual Studio C++/MFC, and a compatible Windows SDK.",
+          "tags": ["build", "Visual Studio", "Windows"],
+          "what": "Builds the Prof-UIS dependency, shared library, executable, and unit-test DLL for the selected solution configuration.",
+          "how": [
+            "Run `msbuild SCICompanion.sln /m /p:Configuration=Release /p:Platform=Win32` from a compatible Visual Studio Developer Command Prompt.",
+            "The checked-in projects mostly request `v140_xp`; one library configuration names `v145`, so the verified modern retargeting recipe remains open work."
+          ],
+          "why": "Recorded in D-001 for the native architecture. The unresolved toolchain detail remains visible as Q-001 and P1-02 rather than being replaced with an unverified compatibility claim.",
+          "evidence": [
+            {"label": "Solution", "target": "SCICompanion.sln"},
+            {"label": "Build guidance", "target": "docs/TESTING.md#build-and-native-unit-tests"},
+            {"label": "Open toolchain question", "target": "docs/DECISIONS.md#open-questions"}
+          ],
+          "related": ["verification-strategy", "repository-memory"]
+        },
+        {
+          "id": "verification-strategy",
+          "title": "Verification strategy",
+          "summary": "Documentation checks run everywhere; native tests and workflow checks require a Windows-capable environment.",
+          "tags": ["tests", "evidence", "manual checks"],
+          "what": [
+            "Checks documentation references and the 3x manual source on any system with Python 3.",
+            "Uses a Visual Studio native test DLL for covered logic and manual smoke tests for editor workflows and compatibility."
+          ],
+          "how": [
+            "`tools/check_docs.py` validates repository-memory documents; `tools/3x_manual.py check` validates triads, evidence presence, and related IDs.",
+            "`vstest.console.exe Release\\UnitTests.dll` runs the discovered native tests after a successful build; release checks use disposable SCI0 and SCI1.1 projects."
+          ],
+          "why": "Recorded in the testing guide: each check should state both what it proves and what it cannot, because a generated document pass does not prove C++ behavior and native unit tests do not prove complete UI or format compatibility.",
+          "evidence": [
+            {"label": "Testing guide", "target": "docs/TESTING.md"},
+            {"label": "Documentation checker", "target": "tools/check_docs.py"},
+            {"label": "Native tests", "target": "UnitTests/"}
+          ],
+          "related": ["compatibility-scope", "compiler-and-language-tools", "build-environment", "repository-memory"]
+        },
+        {
+          "id": "preferences-and-local-state",
+          "title": "Preferences and local state",
+          "summary": "Registry-backed settings remember editor preferences, paths, recent files, and run profiles on the local machine.",
+          "tags": ["registry", "preferences", "local state"],
+          "what": "Persists application and dialog choices between sessions and offers a startup reset path when settings become invalid.",
+          "how": [
+            "MFC profile APIs read and write beneath the `mtnPhilms` application registry key.",
+            "Holding Shift during startup follows the current reset path; persistent dialogs separately retain their last folder."
+          ],
+          "why": "Inferred from desktop usability and current implementation: local persistence avoids repeated configuration, while an explicit reset path provides recovery from stale or incompatible settings.",
+          "evidence": [
+            {"label": "Application settings", "target": "SCICompanion/SCICompanion.cpp"},
+            {"label": "Persistent dialogs", "target": "SCICompanionLib/Src/Util/PersistentFileDialog.cpp"},
+            {"label": "State inventory", "target": "docs/ARCHITECTURE.md#state-and-caches"}
+          ],
+          "related": ["application-shell", "open-and-identify-game", "compile-and-run", "security-boundaries"]
+        },
+        {
+          "id": "security-boundaries",
+          "title": "Security and data-safety boundaries",
+          "summary": "Game data, imported media, paths, registry values, and process arguments are untrusted inputs.",
+          "tags": ["security", "input validation", "recovery"],
+          "what": "Protects user projects and the host machine from malformed resources, unsafe process launch, accidental overwrite, and disclosure of private paths or assets.",
+          "how": [
+            "Format handlers validate counts, offsets, sizes, and encodings; contributors add negative cases at changed boundaries.",
+            "Tests use committed fixtures or disposable copies, process launch preserves argument boundaries, and reports are sanitized before sharing."
+          ],
+          "why": "Recorded in the security and agent guidance: SCI Companion crosses file-format, filesystem, registry, and process boundaries while operating on valuable user-owned projects, so safe failure and recoverability are part of correctness.",
+          "evidence": [
+            {"label": "Security guide", "target": "docs/SECURITY.md"},
+            {"label": "Agent rules", "target": "AGENTS.md#while-working"},
+            {"label": "Test prerequisites", "target": "docs/TESTING.md#before-any-run"}
+          ],
+          "related": ["game-projects", "resource-system", "edit-save-reload", "compile-and-run", "import-export-convert"]
+        },
+        {
+          "id": "repository-memory",
+          "title": "Repository memory and the 3x manual",
+          "summary": "Canonical Markdown carries project truth; this generated manual offers a cross-cutting What/How/Why reading path.",
+          "tags": ["documentation", "handoff", "3x"],
+          "what": [
+            "Keeps workflow, plans, current state, architecture, decisions, tests, and security guidance in explicitly owned Markdown files.",
+            "Generates `docs/manual.html` from this JSON source as a searchable orientation layer."
+          ],
+          "how": [
+            "`docs/README.md` assigns one canonical home to each kind of fact and defines update triggers.",
+            "`tools/3x_manual.py` validates each manual entry's What/How/Why triad and builds a standalone HTML file; `tools/check_docs.py` validates the canonical Markdown set."
+          ],
+          "why": "Recorded in D-002 and D-003: durable facts should survive individual sessions without being duplicated into drifting tool-specific instructions, while the 3x view makes the same system easier to explore across user behavior, internals, and rationale.",
+          "evidence": [
+            {"label": "Documentation map", "target": "docs/README.md"},
+            {"label": "Decisions", "target": "docs/DECISIONS.md"},
+            {"label": "3x source", "target": "docs/SCICompanion.manual.json"}
+          ],
+          "related": ["product-overview", "build-environment", "verification-strategy"]
+        }
+      ]
+    }
+  ]
+}
